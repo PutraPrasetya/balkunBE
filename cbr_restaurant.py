@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
-from sklearn.cluster import KMeans
-import math
-from retrieve import knn_func
+from knn import knn_func
+from clustering import cluster_kmeans
 
 # memanggil database
 import mysql.connector
@@ -34,13 +32,13 @@ old_case = data[old_case]
 old_case.head()
 
 # Input Data
-daerah = 'Denpasar' 
-tempat = 'Rumah Makan' 
-kategori = 'Babi' 
-jenis = 'Babi Guling' 
-rasa = 'Gurih' 
-harga = '30K' 
-rating = 'Baik'
+daerah = 'Sanur' 
+tempat = 'Hotel' 
+kategori = 'Sapi' 
+jenis = 'Rendang' 
+rasa = 'Asem' 
+harga = '100K' 
+rating = 'Mantap'
 
 new_Case = {
     'Daerah':[daerah],
@@ -63,69 +61,14 @@ le=LabelEncoder()
 for i in mergeData.columns:
     mergeData[i]=le.fit_transform(mergeData[i])
 
-# Split Old Case and New Case
-oldCase = mergeData.iloc[:-1]
-newCase = mergeData.iloc[-1:]
-
 # Indexing dengan K-Means
-
-# Scaling Old Data
-scaler = StandardScaler()
-scaler.fit(oldCase)
-old_scaled = scaler.transform(oldCase)
-old_scaled = pd.DataFrame(old_scaled)
-
-# Scaling All Data
-scaler = StandardScaler()
-scaler.fit(mergeData)
-all_scaled = scaler.transform(mergeData)
-all_scaled = pd.DataFrame(all_scaled)
-
-# mengambil value scale kasus baru
-coordInit = all_scaled.iloc[-1:]
-
-# Clustering Data
-kmeans = KMeans(n_clusters=3)
-y_predicted = kmeans.fit_predict(old_scaled) 
-oldCase['Cluster'] = y_predicted
-
-# Euclidean Distance Between New Case And Centroid
-
-# centroid cluster
-listCentroid = kmeans.cluster_centers_
-
-distance = list()
-for i in range(len(listCentroid)):
-    coordFinal = listCentroid[i]
-
-    #distance from old with centroid
-    dist = math.sqrt(((coordInit[0] - coordFinal[0]) ** 2) 
-                    + ((coordInit[1] - coordFinal[1]) ** 2) 
-                    + ((coordInit[2] - coordFinal[2]) ** 2)
-                    + ((coordInit[3] - coordFinal[3]) ** 2)
-                    + ((coordInit[4] - coordFinal[4]) ** 2)
-                    + ((coordInit[5] - coordFinal[5]) ** 2)
-                    + ((coordInit[6] - coordFinal[6]) ** 2))
-    distance.append(dist)
-
-# Mendapatkan Posisi Cluster Untuk Kasus Baru
-minpos = distance.index(min(distance))
-newCase['Cluster'] = minpos
-
-# Create Cluster
-#Merge Data
-restaurant = [oldCase, newCase]
-restaurant = pd.concat(restaurant).reset_index(drop=True)
-
-# Tabel Cluster Kasus Baru
-restaurant['Cluster']=restaurant['Cluster'].astype('int32')
-newCluster = restaurant.loc[restaurant["Cluster"] == minpos]
+newCluster = cluster_kmeans(mergeData)
 total_rows = len(newCluster.index)
 
 # Similarity dengan K-Nearest Neighbor
 treshold_resto = knn_func(newCluster)
 
-# Hasil Rekomendasi
+# Revise & Reuse
 solusi = treshold_resto.Index
 solusi = np.array(solusi)
 data_list = []
@@ -133,7 +76,7 @@ len_solution = len(treshold_resto)
 
 if len_solution == 0:
     #Jika tidak ada rekomendasi masuk ke revise
-    print("Mohon maaf, tidak ada rekomendasi untuk restoran yang anda cari \n Mohon menunggu pakar dalam mencari rekomendasi yang sesuai untuk anda")
+    print("Mohon maaf, tidak ada rekomendasi untuk restoran yang anda cari\nMohon menunggu pakar dalam mencari rekomendasi yang sesuai untuk anda")
     mycursor = mydb.cursor()
     revise_sql = "INSERT INTO revise (Daerah, Tempat, Kategori, Jenis, Rasa, Harga, Rating) VALUES (%s, %s, %s, %s, %s, %s, %s)"
     revise_src = (daerah, tempat, kategori, jenis, rasa, harga, rating)
