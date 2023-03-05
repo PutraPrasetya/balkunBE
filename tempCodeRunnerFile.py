@@ -1,0 +1,5 @@
+daerah = data.get('daerah') 
+    tempat = data.get('tempat') 
+    kategori = data.get('kategori') 
+    jenis = data.get('jenis') 
+    rasa = data.get('rasa')
