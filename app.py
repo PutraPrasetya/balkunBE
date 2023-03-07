@@ -56,7 +56,6 @@ class solutions(db.Model):
     No_kasus = db.Column(db.Integer, db.ForeignKey('dataset_restoran.No'))
 
 
-
 @app.route('/')
 def hello():
     return 'Hello, World!'
