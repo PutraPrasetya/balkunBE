@@ -8,6 +8,7 @@ import mysql.connector
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://zetyaa:12345@localhost:3306/cbr_restoran"
+# app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://dev:123123@localhost:3306/cbr_restoran" # Local
 
 # memanggil database
 mydb = mysql.connector.connect(
@@ -17,6 +18,12 @@ mydb = mysql.connector.connect(
   database="cbr_restoran"
 )
 
+# mydb = mysql.connector.connect(
+#   host="localhost",
+#   user="dev",
+#   password="123123",
+#   database="cbr_restoran"
+# ) # Local
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -71,7 +78,8 @@ def submit():
     rasa = data.get('rasa') 
     harga = data.get('harga') 
     rating = data.get('rating')
-
+    
+    print(request.form)
     rekomendasi = CBR(mydb, daerah, tempat, kategori, jenis, rasa, harga, rating)
 
     if rekomendasi is None:
@@ -87,14 +95,24 @@ def submitRevise():
     data = request.form
     idrevise = data.get('idrevise')
     restoran = data.get('restoran') 
-    harga = data.get('harga') 
     rating = data.get('rating')
     latitude = data.get('latitude') 
     longitude = data.get('longitude')
     telepon = data.get('telepon')
-    
-    submitted = basisKasus(Nama=restoran, Harga=harga, Rating=rating,
-                          Latitude=latitude, Longitude=longitude, Telepon=telepon)
+    menu = "-"
+    daerah = data.get('daerah')
+    tempat = data.get('tempat')
+    kategori = data.get('kategori')
+    jenis = data.get('jenis')
+    rasa = data.get('rasa')
+    harga = data.get('harga')
+
+    data = basisKasus(Nama=restoran, Menu=menu, Daerah=daerah, Tempat=tempat, Kategori=kategori, 
+                      Harga=harga, Jenis=jenis, Rating=rating, Rasa=rasa,
+                      Latitude=latitude, Longitude=longitude, Telepon=telepon)
+
+    submitted = data
+
     db.session.add(submitted)
     db.session.commit()
     if submitted.No is None:
